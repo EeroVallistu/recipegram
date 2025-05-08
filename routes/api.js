@@ -101,10 +101,16 @@ router.post('/recipes', isAuthenticated, upload.single('recipeImage'), async (re
       return res.status(400).json({ success: false, error: 'At least one ingredient is required' });
     }
     
-    // Validate ingredients format
+    // Validate ingredients format - ensure no empty ingredients after trimming
     if (!ingredients.every(ingredient => ingredient.name && ingredient.name.trim() !== '')) {
-      return res.status(400).json({ success: false, error: 'All ingredients must have a name' });
+      return res.status(400).json({ success: false, error: 'All ingredients must have a non-empty name' });
     }
+    
+    // Clean ingredient data by trimming whitespace
+    ingredients = ingredients.map(ingredient => ({
+      name: ingredient.name.trim(),
+      amount: ingredient.amount ? ingredient.amount.trim() : ''
+    }));
     
     // Get image URL if an image was uploaded
     let imageUrl = null;

@@ -195,12 +195,19 @@
       const formData = new FormData(this);
       
       // Process ingredients with amounts
-      const ingredientNames = Array.from(document.querySelectorAll('input[name="ingredientName"]'))
-        .map(input => input.value.trim())
-        .filter(value => value !== '');
+      const ingredientInputs = document.querySelectorAll('input[name="ingredientName"]');
+      const ingredientNames = Array.from(ingredientInputs)
+        .map(input => input.value.trim());
       
       const ingredientAmounts = Array.from(document.querySelectorAll('input[name="ingredientAmount"]'))
         .map(input => input.value.trim());
+      
+      // Validate that no ingredient names are empty
+      const emptyIngredients = ingredientNames.some(name => name === '');
+      if (emptyIngredients) {
+        alert('All ingredients must have a name');
+        return;
+      }
       
       // Create ingredients array with name and amount
       const ingredients = [];
