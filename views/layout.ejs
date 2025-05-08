@@ -13,7 +13,7 @@
     <nav>
       <% if (locals.user) { %>
         <span>Welcome, <%= user.email %></span>
-        <button id="addRecipeBtn" class="btn btn-primary">Add Recipe</button>
+        <button id="addRecipeBtn" class="add-recipe-button"><i class="recipe-icon">+</i> Add Recipe</button>
         <a href="/logout" class="nav-link">Log out</a>
       <% } else { %>
         <a href="/login" class="nav-link">Log in</a>
