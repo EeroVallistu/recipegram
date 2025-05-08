@@ -16,6 +16,11 @@ router.post('/register', async (req, res) => {
     if (!email || !password || password.length < 6) {
       return res.render('register', { error: 'Please provide a valid email and password (at least 6 characters)', email });
     }
+    
+    // Check if password contains spaces
+    if (password.includes(' ')) {
+      return res.render('register', { error: 'Password cannot contain spaces', email });
+    }
 
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -48,6 +53,11 @@ router.post('/login', async (req, res) => {
     // Check if email and password are provided
     if (!email || !password) {
       return res.render('login', { error: 'Please provide both email and password', email });
+    }
+    
+    // Check if password contains spaces
+    if (password.includes(' ')) {
+      return res.render('login', { error: 'Password cannot contain spaces', email });
     }
 
     // Verify user credentials
