@@ -11,6 +11,7 @@ const db = require('./models/db');
 
 // Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json()); // Added JSON body parsing
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -26,13 +27,55 @@ app.use(session({
   saveUninitialized: true
 }));
 
+// Make user data available to all views
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  next();
+});
+
 // Routes
 const authRoutes = require('./routes/auth');
+const apiRoutes = require('./routes/api'); // New API routes
 app.use(authRoutes);
+app.use('/api', apiRoutes); // Add API routes under /api path
 
 // Main route
-app.get('/', (req, res) => {
-  res.render('index', { user: req.session.user });
+app.get('/', async (req, res) => {
+  try {
+    const Recipe = require('./models/recipe');
+    const recipes = await Recipe.getAll();
+    res.render('index', { recipes });
+  } catch (err) {
+    console.error('Error getting recipes:', err);
+    res.render('index', { recipes: [], error: 'Failed to load recipes' });
+  }
+});
+
+// Category route
+app.get('/category/:id', async (req, res) => {
+  try {
+    const Category = require('./models/category');
+    const categoryId = req.params.id;
+    const recipes = await Category.getRecipesByCategory(categoryId);
+    
+    // Get all categories to find the current one
+    const categories = await Category.getAll();
+    const currentCategory = categories.find(c => c.id == categoryId);
+    
+    res.render('category', { 
+      recipes, 
+      categoryId: parseInt(categoryId),
+      categoryName: currentCategory ? currentCategory.name : 'Unknown Category'
+    });
+  } catch (err) {
+    console.error('Error getting recipes by category:', err);
+    res.render('category', { 
+      recipes: [], 
+      categoryId: parseInt(req.params.id),
+      categoryName: 'Unknown Category',
+      error: 'Failed to load recipes' 
+    });
+  }
 });
 
 // Initialize database and start server
