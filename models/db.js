@@ -63,24 +63,41 @@ function initializeDatabase() {
             }
             console.log('Ingredients table created or already exists');
             
-            // Insert some default categories
-            const defaultCategories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Vegetarian', 'Vegan', 'Snacks'];
-            
-            const insertCategory = (index) => {
-              if (index >= defaultCategories.length) {
-                resolve();
+            // Create favorites table
+            db.run(`CREATE TABLE IF NOT EXISTS favorites (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id INTEGER NOT NULL,
+              recipe_id INTEGER NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+              FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
+              UNIQUE(user_id, recipe_id)
+            )`, (err) => {
+              if (err) {
+                reject(err);
                 return;
               }
+              console.log('Favorites table created or already exists');
               
-              db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', [defaultCategories[index]], (err) => {
-                if (err) {
-                  console.error(`Error inserting category ${defaultCategories[index]}:`, err);
+              // Insert some default categories
+              const defaultCategories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Vegetarian', 'Vegan', 'Snacks'];
+              
+              const insertCategory = (index) => {
+                if (index >= defaultCategories.length) {
+                  resolve();
+                  return;
                 }
-                insertCategory(index + 1);
-              });
-            };
-            
-            insertCategory(0);
+                
+                db.run('INSERT OR IGNORE INTO categories (name) VALUES (?)', [defaultCategories[index]], (err) => {
+                  if (err) {
+                    console.error(`Error inserting category ${defaultCategories[index]}:`, err);
+                  }
+                  insertCategory(index + 1);
+                });
+              };
+              
+              insertCategory(0);
+            });
           });
         });
       });

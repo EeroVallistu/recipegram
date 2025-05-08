@@ -56,34 +56,58 @@ class Recipe {
   }
 
   // Get all recipes with their categories
-  static getAll() {
+  static getAll(userId = null) {
     return new Promise((resolve, reject) => {
-      const sql = `SELECT r.*, c.name as category_name, u.email as user_email
-                   FROM recipes r
-                   JOIN categories c ON r.category_id = c.id
-                   JOIN users u ON r.user_id = u.id
-                   ORDER BY r.created_at DESC`;
+      let sql = `SELECT r.*, c.name as category_name, u.email as user_email`;
       
-      db.all(sql, [], (err, recipes) => {
+      // Include favorite status if userId is provided
+      if (userId) {
+        sql += `, (SELECT 1 FROM favorites f WHERE f.recipe_id = r.id AND f.user_id = ?) AS is_favorite`;
+      }
+      
+      sql += ` FROM recipes r
+               JOIN categories c ON r.category_id = c.id
+               JOIN users u ON r.user_id = u.id
+               ORDER BY r.created_at DESC`;
+      
+      const params = userId ? [userId] : [];
+      
+      db.all(sql, params, (err, recipes) => {
         if (err) {
           reject(err);
           return;
         }
+        
+        // Convert is_favorite to boolean if userId was provided
+        if (userId) {
+          recipes.forEach(recipe => {
+            recipe.is_favorite = !!recipe.is_favorite;
+          });
+        }
+        
         resolve(recipes);
       });
     });
   }
 
   // Get a recipe by ID with its ingredients
-  static getById(recipeId) {
+  static getById(recipeId, userId = null) {
     return new Promise((resolve, reject) => {
-      const sql = `SELECT r.*, c.name as category_name, u.email as user_email
-                   FROM recipes r
-                   JOIN categories c ON r.category_id = c.id
-                   JOIN users u ON r.user_id = u.id
-                   WHERE r.id = ?`;
+      let sql = `SELECT r.*, c.name as category_name, u.email as user_email`;
       
-      db.get(sql, [recipeId], (err, recipe) => {
+      // Include favorite status if userId is provided
+      if (userId) {
+        sql += `, (SELECT 1 FROM favorites f WHERE f.recipe_id = r.id AND f.user_id = ?) AS is_favorite`;
+      }
+      
+      sql += ` FROM recipes r
+               JOIN categories c ON r.category_id = c.id
+               JOIN users u ON r.user_id = u.id
+               WHERE r.id = ?`;
+      
+      const params = userId ? [userId, recipeId] : [recipeId];
+      
+      db.get(sql, params, (err, recipe) => {
         if (err) {
           reject(err);
           return;
@@ -92,6 +116,11 @@ class Recipe {
         if (!recipe) {
           resolve(null);
           return;
+        }
+        
+        // Convert is_favorite to boolean if userId was provided
+        if (userId && recipe) {
+          recipe.is_favorite = !!recipe.is_favorite;
         }
         
         // Get ingredients for this recipe
