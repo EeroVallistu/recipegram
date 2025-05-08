@@ -1,0 +1,15 @@
+<div class="welcome-section">
+  <h2>Welcome to RecipeGram</h2>
+  <p>Share and discover amazing recipes with our community.</p>
+  
+  <% if (!locals.user) { %>
+    <div class="cta-buttons">
+      <a href="/register" class="button primary-button">Join Us</a>
+    </div>
+  <% } else { %>
+    <div class="user-dashboard">
+      <h3>Your Recipe Dashboard</h3>
+      <p>Welcome back! You can start adding your recipes.</p>
+    </div>
+  <% } %>
+</div>
