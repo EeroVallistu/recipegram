@@ -51,28 +51,59 @@ app.get('/', async (req, res) => {
   }
 });
 
-// Category route
-app.get('/category/:id', async (req, res) => {
+// Category route with slug instead of ID
+app.get('/category/:slug', async (req, res) => {
   try {
     const Category = require('./models/category');
-    const categoryId = req.params.id;
-    const recipes = await Category.getRecipesByCategory(categoryId);
+    const categorySlug = req.params.slug;
     
-    // Get all categories to find the current one
-    const categories = await Category.getAll();
-    const currentCategory = categories.find(c => c.id == categoryId);
-    
-    res.render('category', { 
-      recipes, 
-      categoryId: parseInt(categoryId),
-      categoryName: currentCategory ? currentCategory.name : 'Unknown Category'
-    });
+    // First try to parse as ID for backward compatibility
+    if (/^\d+$/.test(categorySlug)) {
+      // If the slug is a number, treat it as an ID (for backward compatibility)
+      const categoryId = parseInt(categorySlug);
+      const recipes = await Category.getRecipesByCategory(categoryId);
+      
+      // Get the category to find its name
+      const categories = await Category.getAll();
+      const currentCategory = categories.find(c => c.id === categoryId);
+      
+      if (currentCategory) {
+        // Redirect to the slug-based URL
+        return res.redirect(`/category/${Category.generateSlug(currentCategory.name)}`);
+      }
+      
+      res.render('category', { 
+        recipes, 
+        categoryId,
+        categoryName: currentCategory ? currentCategory.name : 'Unknown Category'
+      });
+    } else {
+      // Otherwise, treat it as a slug
+      const category = await Category.getBySlug(categorySlug);
+      
+      if (!category) {
+        return res.status(404).render('category', {
+          recipes: [],
+          categoryId: null,
+          categoryName: 'Category Not Found',
+          error: 'The requested category does not exist'
+        });
+      }
+      
+      const recipes = await Category.getRecipesByCategory(category.id);
+      
+      res.render('category', { 
+        recipes, 
+        categoryId: category.id,
+        categoryName: category.name
+      });
+    }
   } catch (err) {
     console.error('Error getting recipes by category:', err);
     res.render('category', { 
       recipes: [], 
-      categoryId: parseInt(req.params.id),
-      categoryName: 'Unknown Category',
+      categoryId: null,
+      categoryName: 'Error',
       error: 'Failed to load recipes' 
     });
   }

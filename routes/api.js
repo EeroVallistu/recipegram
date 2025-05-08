@@ -133,7 +133,7 @@ router.get('/recipes', async (req, res) => {
   }
 });
 
-// Get recipes by category
+// Get recipes by category ID (original route for backward compatibility)
 router.get('/categories/:categoryId/recipes', async (req, res) => {
   try {
     const { categoryId } = req.params;
@@ -141,6 +141,24 @@ router.get('/categories/:categoryId/recipes', async (req, res) => {
     res.json(recipes);
   } catch (err) {
     console.error('Error getting recipes by category:', err);
+    res.status(500).json({ success: false, error: 'Failed to get recipes' });
+  }
+});
+
+// New route - Get recipes by category slug
+router.get('/categories/slug/:slug/recipes', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const category = await Category.getBySlug(slug);
+    
+    if (!category) {
+      return res.status(404).json({ success: false, error: 'Category not found' });
+    }
+    
+    const recipes = await Category.getRecipesByCategory(category.id);
+    res.json(recipes);
+  } catch (err) {
+    console.error('Error getting recipes by category slug:', err);
     res.status(500).json({ success: false, error: 'Failed to get recipes' });
   }
 });

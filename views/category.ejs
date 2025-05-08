@@ -80,22 +80,26 @@
           })
           .then(categories => {
             categories.forEach(category => {
+              // Generate slug from category name if not already provided
+              const slug = category.slug || generateSlug(category.name);
+              
               const link = document.createElement('a');
-              link.href = `/category/${category.id}`;
+              link.href = `/category/${slug}`;
               link.className = 'category-item';
-              // Convert both to numbers to ensure proper comparison
+              // Compare IDs to identify current category
               if (parseInt(category.id) === currentCategoryId) {
                 link.classList.add('active');
               }
               link.textContent = category.name;
               link.setAttribute('data-category-id', category.id);
+              link.setAttribute('data-category-slug', slug);
               dropdown.appendChild(link);
               
               // Add click event to filter recipes by category
               link.addEventListener('click', function(e) {
                 e.preventDefault();
-                const categoryId = this.getAttribute('data-category-id');
-                filterRecipesByCategory(categoryId);
+                const categorySlug = this.getAttribute('data-category-slug');
+                filterRecipesByCategory(categorySlug);
                 
                 // Update active class
                 document.querySelectorAll('.category-item').forEach(item => {
@@ -119,8 +123,18 @@
     }
     
     // Filter recipes by category
-    function filterRecipesByCategory(categoryId) {
-      window.location.href = categoryId ? `/category/${categoryId}` : '/';
+    function filterRecipesByCategory(categorySlug) {
+      window.location.href = categorySlug ? `/category/${categorySlug}` : '/';
+    }
+    
+    // Helper function to generate slug from category name (client-side fallback)
+    function generateSlug(name) {
+      return name
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-')     // Replace spaces with hyphens
+        .replace(/-+/g, '-')      // Replace multiple hyphens with a single hyphen
+        .trim();                  // Remove leading/trailing spaces
     }
   });
 </script>

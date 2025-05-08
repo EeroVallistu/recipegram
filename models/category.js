@@ -12,6 +12,10 @@ class Category {
           reject(err);
           return;
         }
+        // Add slug to each category
+        categories.forEach(category => {
+          category.slug = this.generateSlug(category.name);
+        });
         resolve(categories);
       });
     });
@@ -50,6 +54,53 @@ class Category {
         resolve(recipes);
       });
     });
+  }
+
+  // Get category by slug
+  static getBySlug(slug) {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT * FROM categories WHERE name LIKE ?';
+      
+      // Find categories that could match this slug
+      db.all(sql, ['%'], (err, categories) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        // Find the category with matching slug
+        const category = categories.find(cat => this.generateSlug(cat.name) === slug);
+        resolve(category || null);
+      });
+    });
+  }
+
+  // Get recipes by category slug
+  static getRecipesByCategorySlug(slug) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const category = await this.getBySlug(slug);
+        if (!category) {
+          resolve([]);
+          return;
+        }
+        
+        const recipes = await this.getRecipesByCategory(category.id);
+        resolve(recipes);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  // Generate a slug from a category name
+  static generateSlug(name) {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-')     // Replace spaces with hyphens
+      .replace(/-+/g, '-')      // Replace multiple hyphens with a single hyphen
+      .trim();                  // Remove leading/trailing spaces
   }
 }
 
