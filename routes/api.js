@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const Recipe = require('../models/recipe');
 const Category = require('../models/category');
+const Favorite = require('../models/favorite');
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -47,7 +48,9 @@ function isAuthenticated(req, res, next) {
 // Get all categories
 router.get('/categories', async (req, res) => {
   try {
-    const categories = await Category.getAll();
+    // Include userId if user is logged in
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    const categories = await Category.getAll(userId);
     res.json(categories);
   } catch (err) {
     console.error('Error getting categories:', err);
@@ -125,7 +128,9 @@ router.post('/recipes', isAuthenticated, upload.single('recipeImage'), async (re
 // Get all recipes
 router.get('/recipes', async (req, res) => {
   try {
-    const recipes = await Recipe.getAll();
+    // If user is logged in, include favorite status
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    const recipes = await Recipe.getAll(userId);
     res.json(recipes);
   } catch (err) {
     console.error('Error getting recipes:', err);
@@ -137,7 +142,9 @@ router.get('/recipes', async (req, res) => {
 router.get('/categories/:categoryId/recipes', async (req, res) => {
   try {
     const { categoryId } = req.params;
-    const recipes = await Category.getRecipesByCategory(categoryId);
+    // Include userId if user is logged in
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    const recipes = await Category.getRecipesByCategory(categoryId, userId);
     res.json(recipes);
   } catch (err) {
     console.error('Error getting recipes by category:', err);
@@ -155,7 +162,15 @@ router.get('/categories/slug/:slug/recipes', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Category not found' });
     }
     
-    const recipes = await Category.getRecipesByCategory(category.id);
+    // Include userId if user is logged in
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    
+    // Special handling for favorites category
+    if (category.id === 'favorites' && !userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required to view favorites' });
+    }
+    
+    const recipes = await Category.getRecipesByCategory(category.id, userId);
     res.json(recipes);
   } catch (err) {
     console.error('Error getting recipes by category slug:', err);
@@ -166,7 +181,9 @@ router.get('/categories/slug/:slug/recipes', async (req, res) => {
 // Get a single recipe with its ingredients
 router.get('/recipes/:id', async (req, res) => {
   try {
-    const recipe = await Recipe.getById(req.params.id);
+    // If user is logged in, include favorite status
+    const userId = req.session && req.session.user ? req.session.user.id : null;
+    const recipe = await Recipe.getById(req.params.id, userId);
     
     if (!recipe) {
       return res.status(404).json({ success: false, error: 'Recipe not found' });
@@ -176,6 +193,66 @@ router.get('/recipes/:id', async (req, res) => {
   } catch (err) {
     console.error('Error getting recipe:', err);
     res.status(500).json({ success: false, error: 'Failed to get recipe' });
+  }
+});
+
+// Add a recipe to favorites
+router.post('/favorites/:recipeId', isAuthenticated, async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const userId = req.session.user.id;
+    
+    // Check if the recipe exists
+    const recipe = await Recipe.getById(recipeId);
+    if (!recipe) {
+      return res.status(404).json({ success: false, error: 'Recipe not found' });
+    }
+    
+    const added = await Favorite.addFavorite(userId, recipeId);
+    res.json({ success: true, added });
+  } catch (err) {
+    console.error('Error adding favorite:', err);
+    res.status(500).json({ success: false, error: 'Failed to add favorite' });
+  }
+});
+
+// Remove a recipe from favorites
+router.delete('/favorites/:recipeId', isAuthenticated, async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const userId = req.session.user.id;
+    
+    const removed = await Favorite.removeFavorite(userId, recipeId);
+    res.json({ success: true, removed });
+  } catch (err) {
+    console.error('Error removing favorite:', err);
+    res.status(500).json({ success: false, error: 'Failed to remove favorite' });
+  }
+});
+
+// Get user's favorite recipes
+router.get('/favorites', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const favorites = await Favorite.getUserFavorites(userId);
+    res.json(favorites);
+  } catch (err) {
+    console.error('Error getting favorites:', err);
+    res.status(500).json({ success: false, error: 'Failed to get favorites' });
+  }
+});
+
+// Check if a recipe is favorited by the user
+router.get('/favorites/:recipeId', isAuthenticated, async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const userId = req.session.user.id;
+    
+    const isFavorite = await Favorite.isFavorite(userId, recipeId);
+    res.json({ success: true, isFavorite });
+  } catch (err) {
+    console.error('Error checking favorite status:', err);
+    res.status(500).json({ success: false, error: 'Failed to check favorite status' });
   }
 });
 

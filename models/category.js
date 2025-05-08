@@ -1,13 +1,14 @@
 // filepath: d:\Projektid\recipegram\models\category.js
 const { db } = require('./db');
+const Favorite = require('./favorite');
 
 class Category {
   // Get all categories
-  static getAll() {
+  static getAll(userId = null) {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM categories ORDER BY name';
       
-      db.all(sql, [], (err, categories) => {
+      db.all(sql, [], async (err, categories) => {
         if (err) {
           reject(err);
           return;
@@ -16,6 +17,25 @@ class Category {
         categories.forEach(category => {
           category.slug = this.generateSlug(category.name);
         });
+
+        // Add virtual "Favorites" category if userId is provided
+        if (userId) {
+          try {
+            // Check if user has any favorites
+            const favorites = await Favorite.getUserFavorites(userId);
+            if (favorites && favorites.length > 0) {
+              categories.unshift({
+                id: 'favorites', // Special ID for the virtual category
+                name: 'Favorites',
+                slug: 'favorites',
+                virtual: true // Mark as virtual category
+              });
+            }
+          } catch (error) {
+            console.error('Error checking for favorites:', error);
+          }
+        }
+        
         resolve(categories);
       });
     });
@@ -37,20 +57,52 @@ class Category {
   }
 
   // Get recipes by category ID
-  static getRecipesByCategory(categoryId) {
-    return new Promise((resolve, reject) => {
+  static getRecipesByCategory(categoryId, userId = null) {
+    return new Promise(async (resolve, reject) => {
+      // Handle the special case for Favorites virtual category
+      if (categoryId === 'favorites') {
+        if (!userId) {
+          resolve([]);
+          return;
+        }
+
+        try {
+          const favorites = await Favorite.getUserFavorites(userId);
+          // Mark all recipes in favorites view as favorites (this is what was missing)
+          favorites.forEach(recipe => {
+            recipe.is_favorite = true;
+          });
+          resolve(favorites);
+        } catch (err) {
+          reject(err);
+        }
+        return;
+      }
+
+      // Regular category
       const sql = `SELECT r.*, c.name as category_name, u.email as user_email
+                   ${userId ? ', (SELECT 1 FROM favorites f WHERE f.recipe_id = r.id AND f.user_id = ?) AS is_favorite' : ''}
                    FROM recipes r
                    JOIN categories c ON r.category_id = c.id
                    JOIN users u ON r.user_id = u.id
                    WHERE r.category_id = ?
                    ORDER BY r.created_at DESC`;
       
-      db.all(sql, [categoryId], (err, recipes) => {
+      const params = userId ? [userId, categoryId] : [categoryId];
+      
+      db.all(sql, params, (err, recipes) => {
         if (err) {
           reject(err);
           return;
         }
+
+        // Convert is_favorite to boolean if userId was provided
+        if (userId) {
+          recipes.forEach(recipe => {
+            recipe.is_favorite = !!recipe.is_favorite;
+          });
+        }
+        
         resolve(recipes);
       });
     });
@@ -59,6 +111,17 @@ class Category {
   // Get category by slug
   static getBySlug(slug) {
     return new Promise((resolve, reject) => {
+      // Special case for favorites
+      if (slug === 'favorites') {
+        resolve({
+          id: 'favorites',
+          name: 'Favorites',
+          slug: 'favorites',
+          virtual: true
+        });
+        return;
+      }
+
       const sql = 'SELECT * FROM categories WHERE name LIKE ?';
       
       // Find categories that could match this slug
@@ -76,7 +139,7 @@ class Category {
   }
 
   // Get recipes by category slug
-  static getRecipesByCategorySlug(slug) {
+  static getRecipesByCategorySlug(slug, userId = null) {
     return new Promise(async (resolve, reject) => {
       try {
         const category = await this.getBySlug(slug);
@@ -85,7 +148,7 @@ class Category {
           return;
         }
         
-        const recipes = await this.getRecipesByCategory(category.id);
+        const recipes = await this.getRecipesByCategory(category.id, userId);
         resolve(recipes);
       } catch (err) {
         reject(err);

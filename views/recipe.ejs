@@ -9,7 +9,15 @@
     <% if (locals.recipe) { %>
         <div class="recipe-header">
             <a href="/" class="back-link"><< Back to Recipes</a>
-            <h1 class="recipe-title"><%= recipe.title %></h1>
+            <div class="title-favorite-container">
+                <h1 class="recipe-title"><%= recipe.title %></h1>
+                <% if (locals.user) { %>
+                <button id="favoriteButton" class="favorite-button-large <%= recipe.is_favorite ? 'active' : '' %>" data-recipe-id="<%= recipe.id %>" data-is-favorite="<%= recipe.is_favorite ? 'true' : 'false' %>">
+                    <span class="favorite-icon-large">♥</span>
+                    <span class="favorite-text"><%= recipe.is_favorite ? 'Remove from Favorites' : 'Add to Favorites' %></span>
+                </button>
+                <% } %>
+            </div>
             <span class="recipe-category"><%= recipe.category_name %></span>
         </div>
 
@@ -62,6 +70,61 @@
         </div>
     <% } %>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const favoriteButton = document.getElementById('favoriteButton');
+    
+    if (favoriteButton) {
+        favoriteButton.addEventListener('click', function() {
+            const recipeId = this.getAttribute('data-recipe-id');
+            const isFavorite = this.getAttribute('data-is-favorite') === 'true';
+            
+            // Toggle favorite status
+            const method = isFavorite ? 'DELETE' : 'POST';
+            
+            fetch(`/api/favorites/${recipeId}`, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Toggle the active class
+                    this.classList.toggle('active');
+                    
+                    // Update the data attribute and button text
+                    const newStatus = !isFavorite;
+                    this.setAttribute('data-is-favorite', newStatus.toString());
+                    
+                    const textSpan = this.querySelector('.favorite-text');
+                    if (textSpan) {
+                        textSpan.textContent = newStatus ? 'Remove from Favorites' : 'Add to Favorites';
+                    }
+                    
+                    // Optional: Show a brief notification
+                    const action = newStatus ? 'added to' : 'removed from';
+                    const notification = document.createElement('div');
+                    notification.className = 'favorite-notification';
+                    notification.textContent = `Recipe ${action} favorites`;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 2000);
+                } else {
+                    console.error('Failed to update favorite:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating favorite status:', error);
+            });
+        });
+    }
+});
+</script>
 
 <style>
     .recipe-detail-container {
@@ -190,6 +253,85 @@
     .not-found-message p {
         margin-bottom: 20px;
         color: #666;
+    }
+
+    .title-favorite-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .favorite-button-large {
+        display: flex;
+        align-items: center;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        padding: 8px 15px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .favorite-button-large:hover {
+        background-color: #f0f0f0;
+    }
+
+    .favorite-button-large.active {
+        background-color: #ffeeee;
+        border-color: #ff6b6b;
+    }
+
+    .favorite-icon-large {
+        color: #ccc;
+        font-size: 20px;
+        margin-right: 8px;
+        transition: color 0.2s ease;
+    }
+
+    .favorite-button-large.active .favorite-icon-large {
+        color: #ff6b6b;
+    }
+
+    .favorite-text {
+        color: #666;
+        transition: color 0.2s ease;
+    }
+
+    .favorite-button-large.active .favorite-text {
+        color: #ff6b6b;
+    }
+
+    .favorite-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #333;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 4px;
+        z-index: 1000;
+        animation: slideIn 0.5s, fadeOut 0.5s 2.5s;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateY(-10px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
     }
 
     /* Responsive styles */

@@ -43,7 +43,9 @@ app.use('/api', apiRoutes); // Add API routes under /api path
 app.get('/', async (req, res) => {
   try {
     const Recipe = require('./models/recipe');
-    const recipes = await Recipe.getAll();
+    // Pass user ID if logged in
+    const userId = req.session.user ? req.session.user.id : null;
+    const recipes = await Recipe.getAll(userId);
     res.render('index', { recipes });
   } catch (err) {
     console.error('Error getting recipes:', err);
@@ -56,15 +58,17 @@ app.get('/category/:slug', async (req, res) => {
   try {
     const Category = require('./models/category');
     const categorySlug = req.params.slug;
+    // Get user ID if logged in
+    const userId = req.session.user ? req.session.user.id : null;
     
     // First try to parse as ID for backward compatibility
     if (/^\d+$/.test(categorySlug)) {
       // If the slug is a number, treat it as an ID (for backward compatibility)
       const categoryId = parseInt(categorySlug);
-      const recipes = await Category.getRecipesByCategory(categoryId);
+      const recipes = await Category.getRecipesByCategory(categoryId, userId);
       
       // Get the category to find its name
-      const categories = await Category.getAll();
+      const categories = await Category.getAll(userId);
       const currentCategory = categories.find(c => c.id === categoryId);
       
       if (currentCategory) {
@@ -89,8 +93,13 @@ app.get('/category/:slug', async (req, res) => {
           error: 'The requested category does not exist'
         });
       }
+
+      // Check authentication for favorites category
+      if (category.id === 'favorites' && !userId) {
+        return res.redirect('/login?returnTo=/category/favorites');
+      }
       
-      const recipes = await Category.getRecipesByCategory(category.id);
+      const recipes = await Category.getRecipesByCategory(category.id, userId);
       
       res.render('category', { 
         recipes, 
@@ -114,9 +123,11 @@ app.get('/recipe/:id', async (req, res) => {
   try {
     const Recipe = require('./models/recipe');
     const recipeId = req.params.id;
+    // Get user ID if logged in
+    const userId = req.session.user ? req.session.user.id : null;
 
-    // Get recipe by ID
-    const recipe = await Recipe.getById(recipeId);
+    // Get recipe by ID (include favorite status if user is logged in)
+    const recipe = await Recipe.getById(recipeId, userId);
 
     if (!recipe) {
       return res.status(404).render('recipe', {
