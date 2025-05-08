@@ -21,8 +21,8 @@ class Recipe {
   // Add ingredients to a recipe
   static addIngredients(recipeId, ingredients) {
     return new Promise((resolve, reject) => {
-      // Prepare statement for inserting ingredients
-      const stmt = db.prepare('INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)');
+      // Prepare statement for inserting ingredients with amounts
+      const stmt = db.prepare('INSERT INTO ingredients (recipe_id, name, amount) VALUES (?, ?, ?)');
       
       // Start a transaction for batch insert
       db.serialize(() => {
@@ -30,7 +30,7 @@ class Recipe {
         
         let hasError = false;
         ingredients.forEach(ingredient => {
-          stmt.run(recipeId, ingredient, (err) => {
+          stmt.run(recipeId, ingredient.name, ingredient.amount, (err) => {
             if (err) {
               hasError = true;
               reject(err);

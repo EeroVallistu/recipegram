@@ -98,6 +98,11 @@ router.post('/recipes', isAuthenticated, upload.single('recipeImage'), async (re
       return res.status(400).json({ success: false, error: 'At least one ingredient is required' });
     }
     
+    // Validate ingredients format
+    if (!ingredients.every(ingredient => ingredient.name && ingredient.name.trim() !== '')) {
+      return res.status(400).json({ success: false, error: 'All ingredients must have a name' });
+    }
+    
     // Get image URL if an image was uploaded
     let imageUrl = null;
     if (req.file) {

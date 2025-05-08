@@ -49,11 +49,12 @@ function initializeDatabase() {
           }
           console.log('Recipes table created or already exists');
           
-          // Create ingredients table
+          // Create ingredients table with amount column
           db.run(`CREATE TABLE IF NOT EXISTS ingredients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             recipe_id INTEGER NOT NULL,
             name TEXT NOT NULL,
+            amount TEXT,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
           )`, (err) => {
             if (err) {

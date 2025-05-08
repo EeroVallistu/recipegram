@@ -69,7 +69,8 @@
         <label>Ingredients:</label>
         <div id="ingredientsContainer">
           <div class="ingredient-input">
-            <input type="text" name="ingredients[]" required>
+            <input type="text" name="ingredientName" placeholder="Ingredient name" required>
+            <input type="text" name="ingredientAmount" placeholder="Amount (e.g. 2 cups)" required>
           </div>
         </div>
         <button type="button" id="addIngredientBtn">+ Add Ingredient</button>
@@ -110,7 +111,9 @@
       const container = document.getElementById('ingredientsContainer');
       const div = document.createElement('div');
       div.className = 'ingredient-input';
-      div.innerHTML = '<input type="text" name="ingredients[]" required><button type="button" class="remove-ingredient">✕</button>';
+      div.innerHTML = '<input type="text" name="ingredientName" placeholder="Ingredient name" required>' +
+                      '<input type="text" name="ingredientAmount" placeholder="Amount (e.g. 2 cups)" required>' +
+                      '<button type="button" class="remove-ingredient">✕</button>';
       container.appendChild(div);
       
       // Add remove functionality to the new remove button
@@ -191,12 +194,26 @@
       
       const formData = new FormData(this);
       
-      // Get all ingredients
-      const ingredients = Array.from(document.querySelectorAll('input[name="ingredients[]"]'))
-        .map(input => input.value)
-        .filter(value => value.trim() !== '');
+      // Process ingredients with amounts
+      const ingredientNames = Array.from(document.querySelectorAll('input[name="ingredientName"]'))
+        .map(input => input.value.trim())
+        .filter(value => value !== '');
       
-      formData.delete('ingredients[]');
+      const ingredientAmounts = Array.from(document.querySelectorAll('input[name="ingredientAmount"]'))
+        .map(input => input.value.trim());
+      
+      // Create ingredients array with name and amount
+      const ingredients = [];
+      for (let i = 0; i < ingredientNames.length; i++) {
+        ingredients.push({
+          name: ingredientNames[i],
+          amount: ingredientAmounts[i] || ''
+        });
+      }
+      
+      // Remove the original fields from FormData and add the new JSON
+      formData.delete('ingredientName');
+      formData.delete('ingredientAmount');
       formData.append('ingredients', JSON.stringify(ingredients));
       
       fetch('/api/recipes', {

@@ -1,3 +1,4 @@
 node_modules
 recipegram.db
 nginx
+public/uploads/*
