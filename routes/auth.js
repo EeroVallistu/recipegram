@@ -14,13 +14,13 @@ router.post('/register', async (req, res) => {
   try {
     // Check if email is valid and password is not empty
     if (!email || !password || password.length < 6) {
-      return res.render('register', { error: 'Please provide a valid email and password (at least 6 characters)' });
+      return res.render('register', { error: 'Please provide a valid email and password (at least 6 characters)', email });
     }
 
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      return res.render('register', { error: 'Email already registered' });
+      return res.render('register', { error: 'Email already registered', email });
     }
 
     // Create new user
@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
     res.redirect('/');
   } catch (error) {
     console.error('Registration error:', error);
-    res.render('register', { error: 'Registration failed. Please try again.' });
+    res.render('register', { error: 'Registration failed. Please try again.', email });
   }
 });
 
@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
   try {
     // Check if email and password are provided
     if (!email || !password) {
-      return res.render('login', { error: 'Please provide both email and password' });
+      return res.render('login', { error: 'Please provide both email and password', email });
     }
 
     // Verify user credentials
@@ -58,11 +58,11 @@ router.post('/login', async (req, res) => {
       req.session.user = user;
       res.redirect('/');
     } else {
-      res.render('login', { error: 'Invalid email or password' });
+      res.render('login', { error: 'Invalid email or password', email });
     }
   } catch (error) {
     console.error('Login error:', error);
-    res.render('login', { error: 'Login failed. Please try again.' });
+    res.render('login', { error: 'Login failed. Please try again.', email });
   }
 });
 
