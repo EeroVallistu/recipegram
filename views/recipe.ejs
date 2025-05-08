@@ -1,0 +1,205 @@
+<!-- Recipe detail view -->
+<div class="recipe-detail-container">
+    <% if (locals.error) { %>
+        <div class="error-message">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <% if (locals.recipe) { %>
+        <div class="recipe-header">
+            <a href="/" class="back-link"><< Back to Recipes</a>
+            <h1 class="recipe-title"><%= recipe.title %></h1>
+            <span class="recipe-category"><%= recipe.category_name %></span>
+        </div>
+
+        <div class="recipe-content-wrapper">
+            <div class="recipe-image-container">
+                <% if (recipe.image_url) { %>
+                    <img src="<%= recipe.image_url %>" alt="<%= recipe.title %>" class="recipe-detail-image">
+                <% } else { %>
+                    <div class="recipe-image-placeholder large">No Image Available</div>
+                <% } %>
+
+                <div class="recipe-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Posted by:</span>
+                        <span class="meta-value"><%= recipe.user_email %></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Date:</span>
+                        <span class="meta-value"><%= new Date(recipe.created_at).toLocaleDateString() %></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recipe-details">
+                <div class="recipe-section">
+                    <h2 class="section-title">Ingredients</h2>
+                    <ul class="ingredients-list">
+                        <% recipe.ingredients.forEach(ingredient => { %>
+                            <li class="ingredient-item">
+                                <span class="ingredient-amount"><%= ingredient.amount %></span>
+                                <span class="ingredient-name"><%= ingredient.name %></span>
+                            </li>
+                        <% }); %>
+                    </ul>
+                </div>
+
+                <div class="recipe-section">
+                    <h2 class="section-title">Instructions</h2>
+                    <div class="recipe-description">
+                        <%= recipe.description %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% } else { %>
+        <div class="not-found-message">
+            <h2>Recipe Not Found</h2>
+            <p>The recipe you're looking for couldn't be found.</p>
+            <a href="/" class="button primary-button">Back to Home</a>
+        </div>
+    <% } %>
+</div>
+
+<style>
+    .recipe-detail-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+    }
+
+    .recipe-header {
+        margin-bottom: 30px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 15px;
+        color: #666;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .back-link:hover {
+        color: #ff6b6b;
+    }
+
+    .recipe-title {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .recipe-category {
+        display: inline-block;
+        background-color: #ff6b6b;
+        color: white;
+        font-size: 0.8rem;
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+
+    .recipe-content-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    .recipe-detail-image {
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .recipe-image-placeholder.large {
+        height: 400px;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        border-radius: 8px;
+    }
+
+    .recipe-meta {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .meta-label {
+        font-weight: 600;
+        margin-right: 5px;
+    }
+
+    .recipe-section {
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        color: #333;
+        border-bottom: 2px solid #ff6b6b;
+        padding-bottom: 10px;
+        display: inline-block;
+    }
+
+    .ingredients-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .ingredient-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+    }
+
+    .ingredient-amount {
+        min-width: 100px;
+        font-weight: 600;
+        color: #ff6b6b;
+    }
+
+    .recipe-description {
+        line-height: 1.8;
+        color: #333;
+        white-space: pre-wrap;
+    }
+
+    .not-found-message {
+        text-align: center;
+        padding: 50px 0;
+    }
+
+    .not-found-message h2 {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .not-found-message p {
+        margin-bottom: 20px;
+        color: #666;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .recipe-content-wrapper {
+            grid-template-columns: 1fr;
+        }
+
+        .recipe-title {
+            font-size: 2rem;
+        }
+    }
+</style>

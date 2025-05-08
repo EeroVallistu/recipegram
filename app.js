@@ -109,6 +109,32 @@ app.get('/category/:slug', async (req, res) => {
   }
 });
 
+// Recipe detail route
+app.get('/recipe/:id', async (req, res) => {
+  try {
+    const Recipe = require('./models/recipe');
+    const recipeId = req.params.id;
+
+    // Get recipe by ID
+    const recipe = await Recipe.getById(recipeId);
+
+    if (!recipe) {
+      return res.status(404).render('recipe', {
+        recipe: null,
+        error: 'Recipe not found'
+      });
+    }
+
+    res.render('recipe', { recipe });
+  } catch (err) {
+    console.error('Error getting recipe details:', err);
+    res.render('recipe', {
+      recipe: null,
+      error: 'Failed to load recipe details'
+    });
+  }
+});
+
 // Initialize database and start server
 db.initializeDatabase().then(() => {
   app.listen(port, () => {
